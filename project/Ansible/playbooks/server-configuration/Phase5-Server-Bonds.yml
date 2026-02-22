@@ -1,0 +1,37 @@
+---
+- name: Configure server bonds (Phase 5)
+  hosts: servers
+  become: true
+
+  tasks:
+    - name: Render netplan bond config
+      ansible.builtin.template:
+        src: templates/server-bond-netplan.j2
+        dest: "/etc/netplan/01-{{ server_bond_name }}.yaml"
+        owner: root
+        group: root
+        mode: '0600'
+      notify: Apply netplan
+
+    - name: Flush handlers before post-checks
+      ansible.builtin.meta: flush_handlers
+
+  handlers:
+    - name: Apply netplan
+      become: true
+      ansible.builtin.command: netplan apply
+
+  post_tasks:
+    - name: Check server bond interface exists
+      become: true
+      ansible.builtin.command: ip -o link show {{ server_bond_name }}
+      register: bond_link
+      changed_when: false
+      failed_when: bond_link.rc != 0
+
+    - name: Check server bond interface has correct IP
+      become: true
+      ansible.builtin.command: ip -o addr show {{ server_bond_name }}
+      register: bond_addr
+      changed_when: false
+      failed_when: server_bond_ips[inventory_hostname] not in bond_addr.stdout

@@ -1,0 +1,165 @@
+---
+- name: Phase 6 - Leaf EVPN/VXLAN Configuration
+  hosts: leafs
+  become: true
+  gather_facts: false
+
+
+  tasks:
+
+    - name: Calculate MLAG pair ID from hostname
+      ansible.builtin.set_fact:
+        mlag_pair_id: "{{ ((inventory_hostname | regex_replace('leaf', '') | int) / 2) | round(0, 'ceil') | int }}"
+
+    - name: Calculate anycast VTEP IP
+      ansible.builtin.set_fact:
+        anycast_vtep_ip: "{{ evpn_vtep_base }}.{{ mlag_pair_id | int + evpn_vtep_offset | int }}/32"
+
+    - name: Debug calculated values
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} pair={{ mlag_pair_id }} vtep={{ anycast_vtep_ip }}"
+
+    - name: Set VLAN on bridge
+      ansible.builtin.command: nv set bridge domain {{ evpn_bridge }} vlan {{ evpn_vlan_id }}
+      changed_when: true
+
+    - name: Map VLAN to VNI
+      ansible.builtin.command: nv set bridge domain {{ evpn_bridge }} vlan {{ evpn_vlan_id }} vni {{ evpn_vni }}
+      changed_when: true
+
+    - name: Note - server-facing leaf bond already attached to bridge in Phase 1
+      ansible.builtin.debug:
+        msg: "{{ leaf_server_bond_name }} (containing {{ leaf_server_port }}) is already attached to {{ evpn_bridge }} with access VLAN {{ evpn_vlan_id }}"
+      changed_when: true
+
+    - name: Apply bridge VLAN VNI config
+      ansible.builtin.command: nv config apply --assume-yes
+      changed_when: true
+
+    - name: Verify VLAN exists on bridge
+      ansible.builtin.command: nv show bridge domain {{ evpn_bridge }} vlan {{ evpn_vlan_id }}
+      register: vlan_check
+      changed_when: false
+      failed_when: vlan_check.rc != 0
+
+    - name: Add anycast VTEP IP to loopback
+      ansible.builtin.command: nv set interface lo ip address {{ anycast_vtep_ip }}
+      changed_when: true
+
+    - name: Set VXLAN anycast shared address
+      ansible.builtin.command: nv set nve vxlan mlag shared-address {{ anycast_vtep_ip | ansible.utils.ipaddr('address') }}
+      changed_when: true
+
+    - name: Set VXLAN source address to anycast VTEP IP
+      ansible.builtin.command: nv set nve vxlan source address {{ anycast_vtep_ip | ansible.utils.ipaddr('address') }}
+      changed_when: true
+
+    - name: Enable VXLAN
+      ansible.builtin.command: nv set nve vxlan enable on
+      changed_when: true
+
+    - name: Apply VTEP config
+      ansible.builtin.command: nv config apply --assume-yes
+      changed_when: true
+
+    - name: Verify anycast VTEP IP on loopback
+      ansible.builtin.command: ip addr show lo
+      register: lo_check
+      changed_when: false
+      failed_when: anycast_vtep_ip | ansible.utils.ipaddr('address') not in lo_check.stdout
+
+    - name: Enable EVPN globally
+      ansible.builtin.command: nv set evpn enable on
+      changed_when: true
+
+    - name: Enable EVPN on VNI
+      ansible.builtin.debug:
+        msg: "VNI {{ evpn_vni }} enabled implicitly via bridge mapping"
+      changed_when: true
+
+    - name: Activate l2vpn evpn AF toward all spines
+      ansible.builtin.command: >
+        nv set vrf default router bgp neighbor
+        {{ spine_prefix }}{{ item | regex_replace('^\D+', '') }}
+        address-family l2vpn-evpn enable on
+      loop: "{{ groups['spines'] }}"
+      changed_when: true
+
+    - name: Apply EVPN control-plane config
+      ansible.builtin.command: nv config apply --assume-yes
+      changed_when: true
+
+    - name: Verify EVPN VNI is up
+      ansible.builtin.command: nv show evpn vni {{ evpn_vni }}
+      register: vni_check
+      changed_when: false
+      failed_when: vni_check.rc != 0
+
+    - name: Enable SVI IP advertisement for ARP suppression
+      ansible.builtin.command: nv set evpn vni {{ evpn_vni }} route-advertise svi-ip on
+      changed_when: true
+
+    - name: Enable default-gateway advertisement
+      ansible.builtin.command: nv set evpn vni {{ evpn_vni }} route-advertise default-gateway on
+      changed_when: true
+
+    - name: Create SVI for VLAN
+      ansible.builtin.command: nv set interface vlan{{ evpn_vlan_id }} ip address {{ evpn_anycast_gw }}
+      changed_when: true
+
+    - name: Enable VRR on SVI
+      ansible.builtin.command: nv set interface vlan{{ evpn_vlan_id }} ip vrr enable on
+      changed_when: true
+
+    - name: Set VRR gateway IP on SVI
+      ansible.builtin.command: nv set interface vlan{{ evpn_vlan_id }} ip vrr address {{ evpn_anycast_gw }}
+      changed_when: true
+
+    - name: Apply anycast GW config
+      ansible.builtin.command: nv config apply --assume-yes
+      changed_when: true
+
+    - name: Verify SVI has correct IP
+      ansible.builtin.command: ip addr show vlan{{ evpn_vlan_id }}
+      register: svi_check
+      changed_when: false
+      failed_when: evpn_anycast_gw | ansible.utils.ipaddr('address') not in svi_check.stdout
+
+
+- name: Phase 6 - Spine EVPN AF Configuration
+  hosts: spines
+  become: true
+  gather_facts: false
+
+  tasks:
+
+    - name: Build leaf neighbor list from inventory
+      ansible.builtin.set_fact:
+        leaf_neighbors: >-
+          {{
+            groups['leafs']
+            | map('regex_replace', '^\D+', '')
+            | map('int')
+            | map('string')
+            | map('regex_replace', '^(.*)$', leaf_prefix + '\1')
+            | list
+          }}
+
+    - name: Debug leaf neighbor list
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} activating EVPN toward {{ leaf_neighbors }}"
+
+    - name: Activate l2vpn evpn AF toward each leaf
+      ansible.builtin.command: nv set vrf default router bgp neighbor {{ item }} address-family l2vpn-evpn enable on
+      loop: "{{ leaf_neighbors }}"
+      changed_when: true
+
+    - name: Apply spine EVPN config
+      ansible.builtin.command: nv config apply --assume-yes
+      changed_when: true
+
+    - name: Verify EVPN is active on spine
+      ansible.builtin.command: nv show evpn
+      register: spine_evpn_check
+      changed_when: false
+      failed_when: spine_evpn_check.rc != 0

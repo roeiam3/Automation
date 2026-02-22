@@ -1,0 +1,173 @@
+---
+- name: Phase 1 - Configure Switch Interfaces
+  hosts: switches
+  gather_facts: no
+  tasks:
+    - name: Configure interfaces
+      shell: |
+        nv set interface swp1-64 link mtu 9216
+        nv set interface swp1-64 link state up
+        nv config apply -y
+      ignore_errors: yes
+
+- name: Phase 1 - Configure MLAG on Leaf Pairs
+  hosts: leafs
+  gather_facts: no
+  tasks:
+    # ------------------------------------------------
+    # Calculate MLAG pair ID and determine primary/secondary
+    # ------------------------------------------------
+    - name: Extract numeric index from hostname
+      set_fact:
+        host_index: "{{ inventory_hostname | regex_replace('^leaf', '') | int }}"
+
+    - name: Calculate MLAG pair ID and role
+      set_fact:
+        mlag_pair_id: "{{ ((host_index / 2) | round(0, 'ceil') | int) }}"
+        is_primary: "{{ (host_index % 2 == 1) | ternary('primary', 'secondary') }}"
+
+    - name: Debug MLAG pair assignment
+      debug:
+        msg: "{{ inventory_hostname }} -> pair={{ mlag_pair_id }}, role={{ is_primary }}"
+
+    # ------------------------------------------------
+    # Dynamically derive sys-mac from pair ID
+    # ------------------------------------------------
+    - name: Generate MLAG sys-mac from pair ID
+      set_fact:
+        mlag_sys_mac: "44:38:39:be:ef:{{ '%02x' | format(mlag_pair_id) }}"
+
+    # ------------------------------------------------
+    # Find peer leaf in same MLAG pair from inventory
+    # ------------------------------------------------
+    - name: Calculate peer leaf index
+      set_fact:
+        peer_leaf_index: "{{ (host_index + 1) if (host_index % 2 == 1) else (host_index - 1) }}"
+
+    - name: Construct peer leaf hostname
+      set_fact:
+        peer_leaf: "leaf{{ peer_leaf_index }}"
+
+    - name: Get peer leaf management IP from inventory
+      set_fact:
+        mlag_backup_ip: "{{ hostvars[peer_leaf]['ansible_host'] }}"
+      when: peer_leaf in groups['leafs']
+
+    - name: Validate MLAG peer exists in inventory
+      fail:
+        msg: "MLAG peer {{ peer_leaf }} for {{ inventory_hostname }} is missing from [leafs] inventory."
+      when: peer_leaf not in groups['leafs']
+
+    - name: Debug derived MLAG config
+      debug:
+        msg: |
+          Pair ID: {{ mlag_pair_id }}
+          Sys-MAC: {{ mlag_sys_mac }}
+          Peer Leaf: {{ peer_leaf }}
+          Backup IP: {{ mlag_backup_ip }}
+
+    # ------------------------------------------------
+    # Configure MLAG global settings on each leaf
+    # ------------------------------------------------
+    - name: Configure MLAG system MAC and enable
+      shell: |
+        nv set mlag enable on
+        nv set mlag sys-mac {{ mlag_sys_mac }}
+        nv set mlag backup {{ mlag_backup_ip }}
+        nv set mlag peerlink swp1-2
+        nv set mlag priority {{ '100' if is_primary == 'primary' else '200' }}
+        nv config apply -y
+      ignore_errors: yes
+
+    # ------------------------------------------------
+    # Create server-facing bond on leaf, add to bridge, enable MLAG on bond
+    # ------------------------------------------------
+    - name: Validate leaf server port is above MLAG peerlink range
+      assert:
+        that:
+          - leaf_server_port is match('^swp[0-9]+$')
+          - (leaf_server_port | regex_replace('^swp', '') | int) > 2
+        fail_msg: "leaf_server_port must be swp3 or higher to avoid MLAG peerlink ports swp1-2."
+
+    - name: Create server-facing bond interface on leaf
+      shell: |
+        nv set interface {{ leaf_server_bond_name }} bond member {{ leaf_server_port }}
+        nv set interface {{ leaf_server_bond_name }} bond mlag enable on
+        nv set interface {{ leaf_server_bond_name }} bond mlag id {{ mlag_pair_id }}
+        nv set interface {{ leaf_server_bond_name }} bridge domain {{ evpn_bridge }}
+        nv set interface {{ leaf_server_bond_name }} bridge domain {{ evpn_bridge }} access {{ evpn_vlan_id }}
+        nv config apply -y
+      ignore_errors: yes
+
+    - name: Verify MLAG status
+      shell: clagctl status 2>/dev/null || echo "MLAG not yet converged"
+      register: mlag_status
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Show MLAG status
+      debug:
+        msg: |
+          
+          ===== {{ inventory_hostname }} MLAG Config =====
+          Pair ID: {{ mlag_pair_id }}
+          Role: {{ is_primary }}
+          Sys-MAC: {{ mlag_sys_mac }}
+          Backup IP: {{ mlag_backup_ip }}
+          
+          {{ mlag_status.stdout }}
+
+- name: Phase 1 - Configure Server Interfaces
+  hosts: servers
+  gather_facts: no
+  tasks:
+    - name: Bring up eth1 and eth2 (DO NOT TOUCH eth0 - management)
+      shell: |
+        sudo ip link set eth1 up
+        sudo ip link set eth1 mtu 9000
+        sudo ip link set eth2 up
+        sudo ip link set eth2 mtu 9000
+      ignore_errors: yes
+
+- name: Phase 1 - Wait for LLDP
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - pause:
+        seconds: 20
+
+- name: Phase 1 - Show Switch Summary
+  hosts: switches
+  gather_facts: no
+  tasks:
+    - name: Get critical interfaces only
+      shell: >
+        nv show interface | grep -E
+        '(Interface|swp1 |swp2 |{{ leaf_server_port | default("swp3") }} |swp6[1-4] )'
+      register: result
+      ignore_errors: yes
+    - debug:
+        msg: |
+          
+          ===== {{ inventory_hostname }} =====
+          {{ result.stdout }}
+
+- name: Phase 1 - Show Server Summary
+  hosts: servers
+  gather_facts: no
+  tasks:
+    - name: Get eth interfaces
+      shell: ip -br link show | grep eth
+      register: result
+    - debug:
+        msg: |
+          
+          ===== {{ inventory_hostname }} =====
+          {{ result.stdout }}
+    
+    - name: Get LLDP neighbors
+      shell: sudo lldpcli show neighbors -f keyvalue | grep -E '(interface|chassis.name)'
+      register: lldp
+      ignore_errors: yes
+    - debug:
+        msg: "{{ lldp.stdout }}"

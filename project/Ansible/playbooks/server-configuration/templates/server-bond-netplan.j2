@@ -1,0 +1,24 @@
+# Ansible managed
+network:
+  version: 2
+  renderer: networkd
+
+  ethernets:
+{% for iface in server_bond_members[inventory_hostname] %}
+    {{ iface }}:
+      dhcp4: false
+      dhcp6: false
+{% endfor %}
+
+  bonds:
+    {{ server_bond_name }}:
+      interfaces: [{{ server_bond_members[inventory_hostname] | join(', ') }}]
+      parameters:
+        mode: {{ server_bond_mode }}
+        lacp-rate: {{ server_bond_lacp_rate }}
+        mii-monitor-interval: {{ server_bond_mii_interval }}
+      addresses:
+        - {{ server_bond_ips[inventory_hostname] }}
+      routes:
+        - to: default
+          via: {{ server_bond_gateway }}

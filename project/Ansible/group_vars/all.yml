@@ -1,0 +1,10 @@
+leaf_prefix: "100.0.0."
+spine_prefix: "200.0.0."
+
+spine_asn: 1000
+leaf_asn_base: 5000
+
+evpn_vlan_id: 10
+evpn_vni: 1010
+evpn_anycast_gw: "192.168.1.254/24"
+evpn_bridge: "br_default"

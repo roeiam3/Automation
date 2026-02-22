@@ -1,0 +1,8 @@
+# VTEP IP calculation variables
+# anycast VTEP IP = evpn_vtep_base.mlag_pair_id + evpn_vtep_offset
+evpn_vtep_base: "100.0.0"
+evpn_vtep_offset: 10
+
+# Server-facing port (same on all leafs)
+leaf_server_port: "swp3"
+leaf_server_bond_name: "bond0"
