@@ -1,0 +1,38 @@
+---
+- name: Phase 2 - Configure Loopback Interfaces
+  hosts: switches
+  gather_facts: no
+
+  tasks:
+    - name: Extract numeric index from hostname
+      set_fact:
+        host_index: "{{ inventory_hostname | regex_replace('^\\D+', '') | int }}"
+
+    - name: Set loopback IP for leafs
+      set_fact:
+        loopback_ip: "{{ leaf_prefix }}{{ host_index }}/32"
+      when: "'leaf' in inventory_hostname"
+
+    - name: Set loopback IP for spines
+      set_fact:
+        loopback_ip: "{{ spine_prefix }}{{ host_index }}/32"
+      when: "'spine' in inventory_hostname"
+
+    - name: Apply loopback IP via NVUE
+      shell: |
+        nv set interface lo ip address {{ loopback_ip }}
+        nv config apply -y
+      changed_when: true
+
+    - name: Verify loopback is up
+      shell: nv show interface lo
+      register: lo_result
+      changed_when: false
+
+    - name: Show loopback result
+      debug:
+        msg: |
+
+          ===== {{ inventory_hostname }} =====
+          Assigned: {{ loopback_ip }}
+          {{ lo_result.stdout }}

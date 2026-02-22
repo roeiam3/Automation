@@ -1,0 +1,129 @@
+---
+- name: Phase 4.5 - eBGP Fabric Validation
+  hosts: switches
+  gather_facts: no
+
+  tasks:
+    # ------------------------------------------------
+    # Re-derive own identity
+    # ------------------------------------------------
+    - name: Extract numeric index from hostname
+      set_fact:
+        host_index: "{{ inventory_hostname | regex_replace('^\\D+', '') | int }}"
+
+    - name: Set identity for leafs
+      set_fact:
+        loopback_ip: "{{ leaf_prefix }}{{ host_index }}"
+        my_asn: "{{ leaf_asn_base + host_index | int }}"
+      when: "'leaf' in inventory_hostname"
+
+    - name: Set identity for spines
+      set_fact:
+        loopback_ip: "{{ spine_prefix }}{{ host_index }}"
+        my_asn: "{{ spine_asn }}"
+      when: "'spine' in inventory_hostname"
+
+    # ------------------------------------------------
+    # Build expected neighbor list per device type
+    # ------------------------------------------------
+    - name: Build expected neighbors for leafs
+      set_fact:
+        expected_neighbors: >-
+          {{
+            groups['spines'] | map('regex_replace', '^\D+', '') | map('int') | list
+            | map('string') | map('regex_replace', '^(.*)$', spine_prefix + '\1')
+            | zip(groups['spines'] | map('regex_replace', '^\D+', '') | map('int') | list)
+            | map('list') | list
+          }}
+      when: "'leaf' in inventory_hostname"
+
+    - name: Build expected neighbors for spines
+      set_fact:
+        expected_neighbors: >-
+          {{
+            groups['leafs'] | map('regex_replace', '^\D+', '') | map('int') | list
+            | map('string') | map('regex_replace', '^(.*)$', leaf_prefix + '\1')
+            | zip(groups['leafs'] | map('regex_replace', '^\D+', '') | map('int') | list)
+            | map('list') | list
+          }}
+      when: "'spine' in inventory_hostname"
+
+    # ------------------------------------------------
+    # Check each expected neighbor individually
+    # ------------------------------------------------
+    - name: Check each BGP neighbor state
+      shell: >
+        nv show vrf default router bgp neighbor
+        {{ item[0] }}
+        --output json 2>/dev/null || echo '{}'
+      loop: "{{ expected_neighbors }}"
+      register: neighbor_checks
+      changed_when: false
+      ignore_errors: yes
+
+    # ------------------------------------------------
+    # Parse results and build per-device report
+    # ------------------------------------------------
+    - name: Build neighbor result report
+      set_fact:
+        neighbor_report: >-
+          {{
+            neighbor_checks.results | map(attribute='item') | zip(neighbor_checks.results) | list
+          }}
+
+    - name: Parse neighbor states
+      set_fact:
+        neighbor_results: >-
+          {{
+            neighbor_results | default([]) + [{
+              'ip': item.0[0],
+              'expected_asn': (spine_asn if 'leaf' in inventory_hostname else (leaf_asn_base + item.0[1])) | int,
+              'state': (item.1.stdout | from_json).get('state', 'MISSING') if item.1.stdout and item.1.stdout != '{}' else 'MISSING',
+              'status': 'OK' if ((item.1.stdout | from_json).get('state', '') == 'established') else 'FAIL'
+            }]
+          }}
+      loop: "{{ neighbor_report }}"
+
+    - name: Set device pass/fail
+      set_fact:
+        device_result: "{{ 'PASS' if neighbor_results | selectattr('status', 'eq', 'FAIL') | list | length == 0 else 'FAIL' }}"
+        failed_neighbors: "{{ neighbor_results | selectattr('status', 'eq', 'FAIL') | list }}"
+
+    # ------------------------------------------------
+    # Per-device output
+    # ------------------------------------------------
+    - name: Per-device BGP neighbor report
+      debug:
+        msg: |
+
+          ===== {{ inventory_hostname }} (ASN: {{ my_asn }}) =====
+          {% for n in neighbor_results %}
+          Neighbor {{ n.ip }} (AS {{ n.expected_asn }}) : {{ n.state }} - {{ n.status }}
+          {% endfor %}
+          Result: {{ device_result }}
+
+  # ------------------------------------------------
+  # Global summary
+  # ------------------------------------------------
+  post_tasks:
+    - name: Global BGP validation summary
+      run_once: true
+      debug:
+        msg: |
+
+          ==========================================
+               PHASE 4.5 VALIDATION SUMMARY
+          ==========================================
+
+          BGP Neighbor Validation:
+          {% for host in ansible_play_hosts %}
+          {% set hfails = hostvars[host]['failed_neighbors'] %}
+            {{ host }} : {{ hostvars[host]['device_result'] }}{% if hfails | length > 0 %} - missing: {% for f in hfails %}{{ f.ip }} (AS {{ f.expected_asn }}){% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+
+          {% endfor %}
+
+          {% if ansible_play_hosts | map('extract', hostvars, 'device_result') | select('eq', 'FAIL') | list | length == 0 %}
+          RESULT: ALL DEVICES PASSED - eBGP fabric is healthy, proceed to Phase 5
+          {% else %}
+          RESULT: ONE OR MORE DEVICES FAILED - investigate before proceeding
+          {% endif %}

@@ -1,0 +1,166 @@
+---
+- name: Phase 7 Validation - Leaf EVPN/VXLAN State
+  hosts: leafs
+  become: true
+  gather_facts: false
+
+  tasks:
+
+    - name: Calculate expected VTEP IP
+      ansible.builtin.set_fact:
+        expected_vtep: "{{ evpn_vtep_base }}.{{ ((inventory_hostname | regex_replace('leaf', '') | int) / 2) | round(0, 'ceil') | int + evpn_vtep_offset | int }}"
+
+    - name: CHECK - VLAN {{ evpn_vlan_id }} exists on bridge
+      ansible.builtin.command: nv show bridge domain {{ evpn_bridge }} vlan {{ evpn_vlan_id }}
+      register: vlan_check
+      changed_when: false
+      failed_when: vlan_check.rc != 0
+
+    - name: CHECK - VNI {{ evpn_vni }} mapped to VLAN {{ evpn_vlan_id }}
+      ansible.builtin.command: nv show bridge domain {{ evpn_bridge }} vlan {{ evpn_vlan_id }}
+      register: vni_map_check
+      changed_when: false
+      failed_when: evpn_vni | string not in vni_map_check.stdout
+
+    - name: CHECK - Anycast VTEP IP on loopback
+      ansible.builtin.command: ip addr show lo
+      register: vtep_check
+      changed_when: false
+      failed_when: expected_vtep not in vtep_check.stdout
+
+    - name: DEBUG - VTEP IP confirmed
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} VTEP IP {{ expected_vtep }} confirmed on loopback"
+
+    - name: CHECK - VXLAN enabled
+      ansible.builtin.command: nv show nve vxlan
+      register: vxlan_check
+      changed_when: false
+      failed_when: vxlan_check.rc != 0
+
+    - name: DEBUG - VXLAN state
+      ansible.builtin.debug:
+        msg: "{{ vxlan_check.stdout }}"
+
+    - name: CHECK - EVPN VNI {{ evpn_vni }} is up
+      ansible.builtin.command: nv show evpn vni {{ evpn_vni }}
+      register: vni_check
+      changed_when: false
+      failed_when: vni_check.rc != 0
+
+    - name: DEBUG - EVPN VNI state
+      ansible.builtin.debug:
+        msg: "{{ vni_check.stdout }}"
+
+    - name: CHECK - SVI vlan{{ evpn_vlan_id }} has anycast GW IP
+      ansible.builtin.command: ip addr show vlan{{ evpn_vlan_id }}
+      register: svi_check
+      changed_when: false
+      failed_when: evpn_anycast_gw not in svi_check.stdout
+
+    - name: CHECK - VRR enabled on SVI
+      ansible.builtin.command: nv show interface vlan{{ evpn_vlan_id }} ip vrr
+      register: vrr_check
+      changed_when: false
+      failed_when: vrr_check.rc != 0
+
+    - name: DEBUG - VRR state
+      ansible.builtin.debug:
+        msg: "{{ vrr_check.stdout }}"
+
+    - name: Build expected spine neighbor list from inventory
+      ansible.builtin.set_fact:
+        spine_neighbors: >-
+          {{
+            groups['spines']
+            | map('regex_replace', '^\D+', '')
+            | map('int')
+            | map('string')
+            | map('regex_replace', '^(.*)$', spine_prefix + '\1')
+            | list
+          }}
+
+    - name: CHECK - BGP EVPN session toward each spine
+      ansible.builtin.command: nv show vrf default router bgp neighbor {{ item }} address-family l2vpn-evpn
+      loop: "{{ spine_neighbors }}"
+      register: evpn_spine_checks
+      changed_when: false
+      failed_when: false
+
+    - name: FAIL - if any spine EVPN session check fails
+      ansible.builtin.fail:
+        msg: >-
+          EVPN AF not healthy toward: {{
+            evpn_spine_checks.results
+            | selectattr('rc', 'ne', 0)
+            | map(attribute='item')
+            | join(', ')
+          }}
+      when: evpn_spine_checks.results | selectattr('rc', 'ne', 0) | list | length > 0
+
+    - name: DEBUG - EVPN neighbor states
+      ansible.builtin.debug:
+        msg: "EVPN AF toward {{ item.item }}: {{ item.stdout }}"
+      loop: "{{ evpn_spine_checks.results }}"
+
+    - name: CHECK - EVPN MAC/IP routes learned on VNI
+      ansible.builtin.command: nv show evpn vni {{ evpn_vni }} mac
+      register: mac_check
+      changed_when: false
+      failed_when: mac_check.rc != 0
+
+    - name: DEBUG - Learned MACs on VNI {{ evpn_vni }}
+      ansible.builtin.debug:
+        msg: "{{ mac_check.stdout }}"
+
+    - name: CHECK - Remote VTEP entries in FDB
+      ansible.builtin.command: /sbin/bridge fdb show
+      register: fdb_check
+      changed_when: false
+      failed_when: fdb_check.rc != 0
+
+    - name: DEBUG - VXLAN FDB entries
+      ansible.builtin.debug:
+        msg: "{{ fdb_check.stdout }}"
+
+
+- name: Phase 7 Validation - Spine EVPN State
+  hosts: spines
+  become: true
+  gather_facts: false
+
+  tasks:
+
+    - name: Build expected leaf neighbor list from inventory
+      ansible.builtin.set_fact:
+        leaf_neighbors: >-
+          {{
+            groups['leafs']
+            | map('regex_replace', '^\D+', '')
+            | map('int')
+            | map('string')
+            | map('regex_replace', '^(.*)$', leaf_prefix + '\1')
+            | list
+          }}
+
+    - name: CHECK - EVPN AF active toward each leaf
+      ansible.builtin.command: nv show vrf default router bgp neighbor {{ item }} address-family l2vpn-evpn
+      loop: "{{ leaf_neighbors }}"
+      register: spine_evpn_neighbors
+      changed_when: false
+      failed_when: false
+
+    - name: DEBUG - Spine EVPN neighbor states
+      ansible.builtin.debug:
+        msg: "EVPN AF toward {{ item.item }}: {{ item.stdout }}"
+      loop: "{{ spine_evpn_neighbors.results }}"
+
+    - name: CHECK - EVPN routes present on spine
+      ansible.builtin.command: nv show vrf default router bgp address-family l2vpn-evpn
+      register: spine_routes
+      changed_when: false
+      failed_when: spine_routes.rc != 0
+
+    - name: DEBUG - EVPN routes on spine
+      ansible.builtin.debug:
+        msg: "{{ spine_routes.stdout }}"

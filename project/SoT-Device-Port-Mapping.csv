@@ -1,0 +1,31 @@
+Device,Role,Mgmt IP (OOB),Port(s),Connected To,Link Purpose,Protocol/Feature,Key Parameter
+spine1,spine,192.168.200.5,swp64,leaf1:swp64,eBGP underlay uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 100.0.0.1 remote-as 5001
+spine1,spine,192.168.200.5,swp63,leaf2:swp64,eBGP underlay uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 100.0.0.2 remote-as 5002
+spine1,spine,192.168.200.5,swp62,leaf3:swp64,eBGP underlay uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 100.0.0.3 remote-as 5003
+spine1,spine,192.168.200.5,swp61,leaf4:swp64,eBGP underlay uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 100.0.0.4 remote-as 5004
+spine2,spine,192.168.200.10,swp64,leaf1:swp63,eBGP underlay uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 100.0.0.1 remote-as 5001
+spine2,spine,192.168.200.10,swp63,leaf2:swp63,eBGP underlay uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 100.0.0.2 remote-as 5002
+spine2,spine,192.168.200.10,swp62,leaf3:swp63,eBGP underlay uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 100.0.0.3 remote-as 5003
+spine2,spine,192.168.200.10,swp61,leaf4:swp63,eBGP underlay uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 100.0.0.4 remote-as 5004
+leaf1,leaf,192.168.200.8,swp1-2,leaf2:swp1-2,MLAG peerlink,MLAG,MLAG pair 1 | bond: peerlink
+leaf1,leaf,192.168.200.8,swp3,server1:eth1,Server bond member,LACP / EVPN access,VLAN10 access | VNI 1010 | bridge br_default
+leaf1,leaf,192.168.200.8,swp63,spine2:swp64,BGP uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 200.0.0.2 remote-as 1000
+leaf1,leaf,192.168.200.8,swp64,spine1:swp64,BGP uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 200.0.0.1 remote-as 1000
+leaf2,leaf,192.168.200.7,swp1-2,leaf1:swp1-2,MLAG peerlink,MLAG,MLAG pair 1 | bond: peerlink
+leaf2,leaf,192.168.200.7,swp3,server1:eth2,Server bond member,LACP / EVPN access,VLAN10 access | VNI 1010 | bridge br_default
+leaf2,leaf,192.168.200.7,swp63,spine2:swp63,BGP uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 200.0.0.2 remote-as 1000
+leaf2,leaf,192.168.200.7,swp64,spine1:swp63,BGP uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 200.0.0.1 remote-as 1000
+leaf3,leaf,192.168.200.9,swp1-2,leaf4:swp1-2,MLAG peerlink,MLAG,MLAG pair 2 | bond: peerlink
+leaf3,leaf,192.168.200.9,swp3,server2:eth1,Server bond member,LACP / EVPN access,VLAN10 access | VNI 1010 | bridge br_default
+leaf3,leaf,192.168.200.9,swp63,spine2:swp62,BGP uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 200.0.0.2 remote-as 1000
+leaf3,leaf,192.168.200.9,swp64,spine1:swp62,BGP uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 200.0.0.1 remote-as 1000
+leaf4,leaf,192.168.200.4,swp1-2,leaf3:swp1-2,MLAG peerlink,MLAG,MLAG pair 2 | bond: peerlink
+leaf4,leaf,192.168.200.4,swp3,server2:eth2,Server bond member,LACP / EVPN access,VLAN10 access | VNI 1010 | bridge br_default
+leaf4,leaf,192.168.200.4,swp63,spine2:swp61,BGP uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 200.0.0.2 remote-as 1000
+leaf4,leaf,192.168.200.4,swp64,spine1:swp61,BGP uplink,OSPFv2 + eBGP,OSPF area0 p2p | BGP peer 200.0.0.1 remote-as 1000
+server1,server,192.168.200.3,eth1,leaf1:swp3,Bond member (bond0),LACP 802.3ad,bond0 | IP: 192.168.1.1/24 | GW: 192.168.1.1
+server1,server,192.168.200.3,eth2,leaf2:swp3,Bond member (bond0),LACP 802.3ad,bond0 | IP: 192.168.1.1/24 | GW: 192.168.1.1
+server1,server,192.168.200.3,eth0,oob-mgmt,Management,OOB,Static do not modify
+server2,server,192.168.200.6,eth1,leaf3:swp3,Bond member (bond0),LACP 802.3ad,bond0 | IP: 192.168.1.2/24 | GW: 192.168.1.1
+server2,server,192.168.200.6,eth2,leaf4:swp3,Bond member (bond0),LACP 802.3ad,bond0 | IP: 192.168.1.2/24 | GW: 192.168.1.1
+server2,server,192.168.200.6,eth0,oob-mgmt,Management,OOB,Static do not modify

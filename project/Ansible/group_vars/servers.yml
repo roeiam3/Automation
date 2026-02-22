@@ -1,0 +1,13 @@
+server_bond_name: bond0
+
+server_bond_members:
+  server1: ["eth1", "eth2"]
+  server2: ["eth1", "eth2"]
+
+server_bond_ips:
+  server1: "192.168.1.11/24"
+  server2: "192.168.1.12/24"
+
+server_bond_mode: "802.3ad"
+server_bond_lacp_rate: "fast"
+server_bond_mii_interval: 100

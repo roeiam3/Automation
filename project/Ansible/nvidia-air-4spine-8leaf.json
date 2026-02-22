@@ -1,0 +1,587 @@
+{
+    "format":  "JSON",
+    "title":  "Ansible-4Spine-8Leaf-MLAG",
+    "ztp":  null,
+    "content":  {
+                    "nodes":  {
+                                  "spine1":  {
+                                                 "cpu":  2,
+                                                 "memory":  4096,
+                                                 "storage":  10,
+                                                 "os":  "cumulus-vx-5.7.0"
+                                             },
+                                  "spine2":  {
+                                                 "cpu":  2,
+                                                 "memory":  4096,
+                                                 "storage":  10,
+                                                 "os":  "cumulus-vx-5.7.0"
+                                             },
+                                  "spine3":  {
+                                                 "cpu":  2,
+                                                 "memory":  4096,
+                                                 "storage":  10,
+                                                 "os":  "cumulus-vx-5.7.0"
+                                             },
+                                  "spine4":  {
+                                                 "cpu":  2,
+                                                 "memory":  4096,
+                                                 "storage":  10,
+                                                 "os":  "cumulus-vx-5.7.0"
+                                             },
+                                  "leaf1":  {
+                                                "cpu":  2,
+                                                "memory":  4096,
+                                                "storage":  10,
+                                                "os":  "cumulus-vx-5.7.0"
+                                            },
+                                  "leaf2":  {
+                                                "cpu":  2,
+                                                "memory":  4096,
+                                                "storage":  10,
+                                                "os":  "cumulus-vx-5.7.0"
+                                            },
+                                  "leaf3":  {
+                                                "cpu":  2,
+                                                "memory":  4096,
+                                                "storage":  10,
+                                                "os":  "cumulus-vx-5.7.0"
+                                            },
+                                  "leaf4":  {
+                                                "cpu":  2,
+                                                "memory":  4096,
+                                                "storage":  10,
+                                                "os":  "cumulus-vx-5.7.0"
+                                            },
+                                  "leaf5":  {
+                                                "cpu":  2,
+                                                "memory":  4096,
+                                                "storage":  10,
+                                                "os":  "cumulus-vx-5.7.0"
+                                            },
+                                  "leaf6":  {
+                                                "cpu":  2,
+                                                "memory":  4096,
+                                                "storage":  10,
+                                                "os":  "cumulus-vx-5.7.0"
+                                            },
+                                  "leaf7":  {
+                                                "cpu":  2,
+                                                "memory":  4096,
+                                                "storage":  10,
+                                                "os":  "cumulus-vx-5.7.0"
+                                            },
+                                  "leaf8":  {
+                                                "cpu":  2,
+                                                "memory":  4096,
+                                                "storage":  10,
+                                                "os":  "cumulus-vx-5.7.0"
+                                            },
+                                  "server1":  {
+                                                  "cpu":  2,
+                                                  "memory":  2048,
+                                                  "storage":  10,
+                                                  "os":  "generic/ubuntu2204"
+                                              },
+                                  "server2":  {
+                                                  "cpu":  2,
+                                                  "memory":  2048,
+                                                  "storage":  10,
+                                                  "os":  "generic/ubuntu2204"
+                                              },
+                                  "server3":  {
+                                                  "cpu":  2,
+                                                  "memory":  2048,
+                                                  "storage":  10,
+                                                  "os":  "generic/ubuntu2204"
+                                              },
+                                  "server4":  {
+                                                  "cpu":  2,
+                                                  "memory":  2048,
+                                                  "storage":  10,
+                                                  "os":  "generic/ubuntu2204"
+                                              }
+                              },
+                    "links":  [
+                                  [
+                                      {
+                                          "node":  "leaf1",
+                                          "interface":  "swp64"
+                                      },
+                                      {
+                                          "node":  "spine1",
+                                          "interface":  "swp64"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf1",
+                                          "interface":  "swp63"
+                                      },
+                                      {
+                                          "node":  "spine2",
+                                          "interface":  "swp64"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf1",
+                                          "interface":  "swp62"
+                                      },
+                                      {
+                                          "node":  "spine3",
+                                          "interface":  "swp64"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf1",
+                                          "interface":  "swp61"
+                                      },
+                                      {
+                                          "node":  "spine4",
+                                          "interface":  "swp64"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf2",
+                                          "interface":  "swp64"
+                                      },
+                                      {
+                                          "node":  "spine1",
+                                          "interface":  "swp63"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf2",
+                                          "interface":  "swp63"
+                                      },
+                                      {
+                                          "node":  "spine2",
+                                          "interface":  "swp63"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf2",
+                                          "interface":  "swp62"
+                                      },
+                                      {
+                                          "node":  "spine3",
+                                          "interface":  "swp63"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf2",
+                                          "interface":  "swp61"
+                                      },
+                                      {
+                                          "node":  "spine4",
+                                          "interface":  "swp63"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf3",
+                                          "interface":  "swp64"
+                                      },
+                                      {
+                                          "node":  "spine1",
+                                          "interface":  "swp62"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf3",
+                                          "interface":  "swp63"
+                                      },
+                                      {
+                                          "node":  "spine2",
+                                          "interface":  "swp62"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf3",
+                                          "interface":  "swp62"
+                                      },
+                                      {
+                                          "node":  "spine3",
+                                          "interface":  "swp62"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf3",
+                                          "interface":  "swp61"
+                                      },
+                                      {
+                                          "node":  "spine4",
+                                          "interface":  "swp62"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf4",
+                                          "interface":  "swp64"
+                                      },
+                                      {
+                                          "node":  "spine1",
+                                          "interface":  "swp61"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf4",
+                                          "interface":  "swp63"
+                                      },
+                                      {
+                                          "node":  "spine2",
+                                          "interface":  "swp61"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf4",
+                                          "interface":  "swp62"
+                                      },
+                                      {
+                                          "node":  "spine3",
+                                          "interface":  "swp61"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf4",
+                                          "interface":  "swp61"
+                                      },
+                                      {
+                                          "node":  "spine4",
+                                          "interface":  "swp61"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf5",
+                                          "interface":  "swp64"
+                                      },
+                                      {
+                                          "node":  "spine1",
+                                          "interface":  "swp60"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf5",
+                                          "interface":  "swp63"
+                                      },
+                                      {
+                                          "node":  "spine2",
+                                          "interface":  "swp60"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf5",
+                                          "interface":  "swp62"
+                                      },
+                                      {
+                                          "node":  "spine3",
+                                          "interface":  "swp60"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf5",
+                                          "interface":  "swp61"
+                                      },
+                                      {
+                                          "node":  "spine4",
+                                          "interface":  "swp60"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf6",
+                                          "interface":  "swp64"
+                                      },
+                                      {
+                                          "node":  "spine1",
+                                          "interface":  "swp59"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf6",
+                                          "interface":  "swp63"
+                                      },
+                                      {
+                                          "node":  "spine2",
+                                          "interface":  "swp59"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf6",
+                                          "interface":  "swp62"
+                                      },
+                                      {
+                                          "node":  "spine3",
+                                          "interface":  "swp59"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf6",
+                                          "interface":  "swp61"
+                                      },
+                                      {
+                                          "node":  "spine4",
+                                          "interface":  "swp59"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf7",
+                                          "interface":  "swp64"
+                                      },
+                                      {
+                                          "node":  "spine1",
+                                          "interface":  "swp58"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf7",
+                                          "interface":  "swp63"
+                                      },
+                                      {
+                                          "node":  "spine2",
+                                          "interface":  "swp58"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf7",
+                                          "interface":  "swp62"
+                                      },
+                                      {
+                                          "node":  "spine3",
+                                          "interface":  "swp58"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf7",
+                                          "interface":  "swp61"
+                                      },
+                                      {
+                                          "node":  "spine4",
+                                          "interface":  "swp58"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf8",
+                                          "interface":  "swp64"
+                                      },
+                                      {
+                                          "node":  "spine1",
+                                          "interface":  "swp57"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf8",
+                                          "interface":  "swp63"
+                                      },
+                                      {
+                                          "node":  "spine2",
+                                          "interface":  "swp57"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf8",
+                                          "interface":  "swp62"
+                                      },
+                                      {
+                                          "node":  "spine3",
+                                          "interface":  "swp57"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf8",
+                                          "interface":  "swp61"
+                                      },
+                                      {
+                                          "node":  "spine4",
+                                          "interface":  "swp57"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf1",
+                                          "interface":  "swp1"
+                                      },
+                                      {
+                                          "node":  "leaf2",
+                                          "interface":  "swp1"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf1",
+                                          "interface":  "swp2"
+                                      },
+                                      {
+                                          "node":  "leaf2",
+                                          "interface":  "swp2"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf3",
+                                          "interface":  "swp1"
+                                      },
+                                      {
+                                          "node":  "leaf4",
+                                          "interface":  "swp1"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf3",
+                                          "interface":  "swp2"
+                                      },
+                                      {
+                                          "node":  "leaf4",
+                                          "interface":  "swp2"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf5",
+                                          "interface":  "swp1"
+                                      },
+                                      {
+                                          "node":  "leaf6",
+                                          "interface":  "swp1"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf5",
+                                          "interface":  "swp2"
+                                      },
+                                      {
+                                          "node":  "leaf6",
+                                          "interface":  "swp2"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf7",
+                                          "interface":  "swp1"
+                                      },
+                                      {
+                                          "node":  "leaf8",
+                                          "interface":  "swp1"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf7",
+                                          "interface":  "swp2"
+                                      },
+                                      {
+                                          "node":  "leaf8",
+                                          "interface":  "swp2"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf1",
+                                          "interface":  "swp3"
+                                      },
+                                      {
+                                          "node":  "server1",
+                                          "interface":  "eth1"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf2",
+                                          "interface":  "swp3"
+                                      },
+                                      {
+                                          "node":  "server1",
+                                          "interface":  "eth2"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf3",
+                                          "interface":  "swp3"
+                                      },
+                                      {
+                                          "node":  "server2",
+                                          "interface":  "eth1"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf4",
+                                          "interface":  "swp3"
+                                      },
+                                      {
+                                          "node":  "server2",
+                                          "interface":  "eth2"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf5",
+                                          "interface":  "swp3"
+                                      },
+                                      {
+                                          "node":  "server3",
+                                          "interface":  "eth1"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf6",
+                                          "interface":  "swp3"
+                                      },
+                                      {
+                                          "node":  "server3",
+                                          "interface":  "eth2"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf7",
+                                          "interface":  "swp3"
+                                      },
+                                      {
+                                          "node":  "server4",
+                                          "interface":  "eth1"
+                                      }
+                                  ],
+                                  [
+                                      {
+                                          "node":  "leaf8",
+                                          "interface":  "swp3"
+                                      },
+                                      {
+                                          "node":  "server4",
+                                          "interface":  "eth2"
+                                      }
+                                  ]
+                              ]
+                }
+}

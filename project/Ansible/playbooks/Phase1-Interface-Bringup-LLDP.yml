@@ -1,0 +1,64 @@
+---
+- name: Phase 1 - Configure Switch Interfaces
+  hosts: switches
+  gather_facts: no
+  tasks:
+    - name: Configure interfaces
+      shell: |
+        nv set interface swp1-64 link mtu 9216
+        nv set interface swp1-64 link state up
+        nv config apply -y
+      ignore_errors: yes
+
+- name: Phase 1 - Configure Server Interfaces
+  hosts: servers
+  gather_facts: no
+  tasks:
+    - name: Bring up eth1 and eth2 (DO NOT TOUCH eth0 - management)
+      shell: |
+        sudo ip link set eth1 up
+        sudo ip link set eth1 mtu 9000
+        sudo ip link set eth2 up
+        sudo ip link set eth2 mtu 9000
+      ignore_errors: yes
+
+- name: Phase 1 - Wait for LLDP
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - pause:
+        seconds: 20
+
+- name: Phase 1 - Show Switch Summary
+  hosts: switches
+  gather_facts: no
+  tasks:
+    - name: Get critical interfaces only
+      shell: nv show interface | grep -E '(Interface|swp[1-3] |swp6[1-4] )'
+      register: result
+      ignore_errors: yes
+    - debug:
+        msg: |
+          
+          ===== {{ inventory_hostname }} =====
+          {{ result.stdout }}
+
+- name: Phase 1 - Show Server Summary
+  hosts: servers
+  gather_facts: no
+  tasks:
+    - name: Get eth interfaces
+      shell: ip -br link show | grep eth
+      register: result
+    - debug:
+        msg: |
+          
+          ===== {{ inventory_hostname }} =====
+          {{ result.stdout }}
+    
+    - name: Get LLDP neighbors
+      shell: sudo lldpcli show neighbors -f keyvalue | grep -E '(interface|chassis.name)'
+      register: lldp
+      ignore_errors: yes
+    - debug:
+        msg: "{{ lldp.stdout }}"
