@@ -4,7 +4,6 @@
   gather_facts: no
 
   tasks:
-
     - name: Run 'show ip protocols' to identify OSPF interfaces
       cisco.ios.ios_command:
         commands: show ip protocols
@@ -31,12 +30,13 @@
         passive_intfs: >-
           {{ passive_section | regex_findall('(?m)^[ \t]+(\S+)') }}
 
-    - name: Filter out passive interfaces and loopbacks
+    - name: Filter out passive interfaces, loopbacks, and bad regex matches
       set_fact:
         active_ospf_intfs: >-
           {{ all_ospf_intfs
              | difference(passive_intfs)
              | reject('match', '^Loopback')
+             | reject('match', '^Routing') 
              | list }}
 
     - name: Debug - show interfaces that will be changed
