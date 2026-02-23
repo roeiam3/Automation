@@ -4,33 +4,32 @@
   gather_facts: no
 
   tasks:
-    - name: Get all active OSPF interfaces
-      cisco.ios.ios_command:
-        commands: "show ip ospf interface | include is up, line protocol"
-      register: ospf_all_result
 
-    - name: Get passive interfaces from protocols
+    - name: Run 'show ip protocols' to identify OSPF interfaces
       cisco.ios.ios_command:
         commands: show ip protocols
-      register: protocols_result
+      register: ospf_result
 
-    - name: Parse ALL OSPF interfaces
+    - name: Extract OSPF configured interfaces section
       set_fact:
-        all_ospf_intfs: >-
-          {{ ospf_all_result.stdout[0] 
-             | regex_findall('(?m)^(\\S+) is up, line protocol') }}
+        ospf_section: >-
+          {{ ospf_result.stdout[0]
+             | regex_search('Routing on Interfaces Configured Explicitly[^:]*:(?:\n    \S+)+')
+             or '' }}
 
     - name: Extract passive interfaces section
       set_fact:
         passive_section: >-
-          {{ protocols_result.stdout[0]
-             | regex_search('Passive Interface\(s\):((?:\n[ \t]+\S+)+)')
+          {{ ospf_result.stdout[0]
+             | regex_search('Passive Interface\(s\):(?:\n    \S+)+')
              or '' }}
 
-    - name: Parse PASSIVE interfaces
+    - name: Build lists of OSPF and passive interfaces
       set_fact:
+        all_ospf_intfs: >-
+          {{ ospf_section | regex_findall('(?m)^    (\S+)') }}
         passive_intfs: >-
-          {{ passive_section | regex_findall('(?m)^[ \t]+(\S+)') }}
+          {{ passive_section | regex_findall('(?m)^    (\S+)') }}
 
     - name: Filter out passive interfaces and loopbacks
       set_fact:
@@ -49,5 +48,6 @@
         lines:
           - ip ospf network point-to-point
         parents: "interface {{ item }}"
+        save_when: modified
       loop: "{{ active_ospf_intfs }}"
       when: active_ospf_intfs | length > 0
