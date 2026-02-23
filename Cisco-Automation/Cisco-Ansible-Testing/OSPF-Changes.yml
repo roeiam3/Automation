@@ -10,31 +10,24 @@
         commands: show ip protocols
       register: ospf_result
 
-    - name: Debug raw 'show ip protocols' output
-      debug:
-        var: ospf_result.stdout[0]
-
-    - name: Extract all OSPF-configured interfaces
+    - name: Extract OSPF configured interfaces section
       set_fact:
-        all_ospf_intfs: >-
-          {{ (ospf_result.stdout[0]
-              | regex_search('Routing on Interfaces Configured Explicitly:\n((?:[ \t]+\S+\n?)+)', '\1')
-              | default(''))
-             .split('\n')
-             | map('trim')
-             | select('ne', '')
-             | list }}
+        ospf_section: >-
+          {{ ospf_result.stdout[0]
+             | regex_search('Routing on Interfaces Configured Explicitly[^:]*((?:\n[ \t]+\S+)+)')
+             or '' }}
 
-    - name: Extract passive interfaces
+    - name: Extract passive interfaces section
       set_fact:
-        passive_intfs: >-
-          {{ (ospf_result.stdout[0]
-              | regex_search('Passive Interface\(s\):\n((?:[ \t]+\S+\n?)+)', '\1')
-              | default(''))
-             .split('\n')
-             | map('trim')
-             | select('ne', '')
-             | list }}
+        passive_section: >-
+          {{ ospf_result.stdout[0]
+             | regex_search('Passive Interface\(s\):((?:\n[ \t]+\S+)+)')
+             or '' }}
+
+    - name: Build lists of OSPF and passive interfaces
+      set_fact:
+        all_ospf_intfs: "{{ ospf_section | regex_findall('(?m)^[ \t]+(\S+)') }}"
+        passive_intfs: "{{ passive_section | regex_findall('(?m)^[ \t]+(\S+)') }}"
 
     - name: Filter out passive interfaces and loopbacks
       set_fact:
