@@ -10,21 +10,31 @@
         commands: show ip protocols
       register: ospf_result
 
+    - name: Debug raw 'show ip protocols' output
+      debug:
+        var: ospf_result.stdout[0]
+
     - name: Extract all OSPF-configured interfaces
       set_fact:
         all_ospf_intfs: >-
           {{ (ospf_result.stdout[0]
               | regex_search('Routing on Interfaces Configured Explicitly:\n((?:[ \t]+\S+\n?)+)', '\1')
-              | first | default('')).split('\n')
-             | map('trim') | select('ne', '') | list }}
+              | default(''))
+             .split('\n')
+             | map('trim')
+             | select('ne', '')
+             | list }}
 
     - name: Extract passive interfaces
       set_fact:
         passive_intfs: >-
           {{ (ospf_result.stdout[0]
               | regex_search('Passive Interface\(s\):\n((?:[ \t]+\S+\n?)+)', '\1')
-              | first | default('')).split('\n')
-             | map('trim') | select('ne', '') | list }}
+              | default(''))
+             .split('\n')
+             | map('trim')
+             | select('ne', '')
+             | list }}
 
     - name: Filter out passive interfaces and loopbacks
       set_fact:
