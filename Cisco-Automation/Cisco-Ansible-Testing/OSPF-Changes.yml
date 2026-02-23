@@ -26,8 +26,10 @@
 
     - name: Build lists of OSPF and passive interfaces
       set_fact:
-        all_ospf_intfs: "{{ ospf_section | regex_findall('(?m)^[ \t]+(\S+)') }}"
-        passive_intfs: "{{ passive_section | regex_findall('(?m)^[ \t]+(\S+)') }}"
+        all_ospf_intfs: >-
+          {{ ospf_section | regex_findall('(?m)^[ \t]+(\S+)') }}
+        passive_intfs: >-
+          {{ passive_section | regex_findall('(?m)^[ \t]+(\S+)') }}
 
     - name: Filter out passive interfaces and loopbacks
       set_fact:
@@ -48,3 +50,4 @@
         parents: "interface {{ item }}"
       loop: "{{ active_ospf_intfs }}"
       when: active_ospf_intfs | length > 0
+
