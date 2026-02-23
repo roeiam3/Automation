@@ -1,0 +1,47 @@
+---
+- name: Change all OSPF neighbor relationships to Point-to-Point
+  hosts: all
+  gather_facts: no
+
+  tasks:
+
+    - name: Run 'show ip protocols' to identify OSPF interfaces
+      cisco.ios.ios_command:
+        commands: show ip protocols
+      register: ospf_result
+
+    - name: Extract all OSPF-configured interfaces
+      set_fact:
+        all_ospf_intfs: >-
+          {{ (ospf_result.stdout[0]
+              | regex_search('Routing on Interfaces Configured Explicitly:\n((?:[ \t]+\S+\n?)+)', '\1')
+              | first | default('')).split('\n')
+             | map('trim') | select('ne', '') | list }}
+
+    - name: Extract passive interfaces
+      set_fact:
+        passive_intfs: >-
+          {{ (ospf_result.stdout[0]
+              | regex_search('Passive Interface\(s\):\n((?:[ \t]+\S+\n?)+)', '\1')
+              | first | default('')).split('\n')
+             | map('trim') | select('ne', '') | list }}
+
+    - name: Filter out passive interfaces and loopbacks
+      set_fact:
+        active_ospf_intfs: >-
+          {{ all_ospf_intfs
+             | difference(passive_intfs)
+             | reject('match', '^Loopback')
+             | list }}
+
+    - name: Debug - show interfaces that will be changed
+      debug:
+        msg: "Interfaces to configure P2P: {{ active_ospf_intfs }}"
+
+    - name: Apply 'ip ospf network point-to-point' to active OSPF interfaces
+      cisco.ios.ios_config:
+        lines:
+          - ip ospf network point-to-point
+        parents: "interface {{ item }}"
+      loop: "{{ active_ospf_intfs }}"
+      when: active_ospf_intfs | length > 0
