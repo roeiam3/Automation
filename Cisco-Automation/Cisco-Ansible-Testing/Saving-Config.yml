@@ -1,0 +1,15 @@
+---
+- name: Save all router configs
+  hosts: all
+  gather_facts: no
+
+  tasks:
+
+    - name: Save config with 'wr'
+      cisco.ios.ios_command:
+        commands: write memory
+      register: save_result
+
+    - name: Show save result
+      debug:
+        var: save_result.stdout[0]
