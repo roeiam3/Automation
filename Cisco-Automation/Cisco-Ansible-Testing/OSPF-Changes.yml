@@ -14,7 +14,7 @@
       set_fact:
         ospf_section: >-
           {{ ospf_result.stdout[0]
-             | regex_search('Routing on Interfaces Configured Explicitly[^:]*((?:\n[ \t]+\S+)+)')
+             | regex_search('Routing on Interfaces Configured Explicitly[^:]*:((?:\n[ \t]+\S+)+)')
              or '' }}
 
     - name: Extract passive interfaces section
@@ -50,4 +50,3 @@
         parents: "interface {{ item }}"
       loop: "{{ active_ospf_intfs }}"
       when: active_ospf_intfs | length > 0
-
