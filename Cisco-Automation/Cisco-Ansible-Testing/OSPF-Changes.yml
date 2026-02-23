@@ -4,39 +4,40 @@
   gather_facts: no
 
   tasks:
-    - name: Run 'show ip protocols' to identify OSPF interfaces
+    - name: Get all active OSPF interfaces
+      cisco.ios.ios_command:
+        commands: "show ip ospf interface | include is up, line protocol"
+      register: ospf_all_result
+
+    - name: Get passive interfaces from protocols
       cisco.ios.ios_command:
         commands: show ip protocols
-      register: ospf_result
+      register: protocols_result
 
-    - name: Extract OSPF configured interfaces section
+    - name: Parse ALL OSPF interfaces
       set_fact:
-        ospf_section: >-
-          {{ ospf_result.stdout[0]
-             | regex_search('Routing on Interfaces Configured Explicitly[^:]*:((?:\n[ \t]+\S+)+)')
-             or '' }}
+        all_ospf_intfs: >-
+          {{ ospf_all_result.stdout[0] 
+             | regex_findall('(?m)^(\\S+) is up, line protocol') }}
 
     - name: Extract passive interfaces section
       set_fact:
         passive_section: >-
-          {{ ospf_result.stdout[0]
+          {{ protocols_result.stdout[0]
              | regex_search('Passive Interface\(s\):((?:\n[ \t]+\S+)+)')
              or '' }}
 
-    - name: Build lists of OSPF and passive interfaces
+    - name: Parse PASSIVE interfaces
       set_fact:
-        all_ospf_intfs: >-
-          {{ ospf_section | regex_findall('(?m)^[ \t]+(\S+)') }}
         passive_intfs: >-
           {{ passive_section | regex_findall('(?m)^[ \t]+(\S+)') }}
 
-    - name: Filter out passive interfaces, loopbacks, and bad regex matches
+    - name: Filter out passive interfaces and loopbacks
       set_fact:
         active_ospf_intfs: >-
           {{ all_ospf_intfs
              | difference(passive_intfs)
              | reject('match', '^Loopback')
-             | reject('match', '^Routing') 
              | list }}
 
     - name: Debug - show interfaces that will be changed
