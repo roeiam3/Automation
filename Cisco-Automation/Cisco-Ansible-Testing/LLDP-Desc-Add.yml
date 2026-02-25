@@ -7,14 +7,17 @@
       cisco.ios.ios_lldp_global:
         config:
           enabled: true
+          
     - name: Fetch LLDP Information & Wait 30 seconds
       ansible.builtin.wait_for:
         timeout: 30
+        
     - name: run LLDP Neighbor command
       cisco.ios.ios_command:
         commands:
           - show lldp neighbors
       register: save_lldp_result
+      
     - name: Print lldp
       ansible.builtin.debug:
         var: save_lldp_result
