@@ -1,0 +1,26 @@
+
+---
+- name: LLDP Enablement and Description adding
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Enable LLDP
+      cisco.ios.ios_lldp_global:
+        config:
+          enabled: true
+          state: present
+
+
+    - name: Fetch LLDP Information & Wait 30 seconds
+      ansible.builtin.wait_for:
+        timeout: 30
+      cisco.ios.ios_command:
+        commands:
+          - show lldp neighbors
+      register: save_lldp_result
+	  
+	- name: Output the LLDP result
+	  ansible.builtin.debug:
+	    var: save_lldp_result
+	  
