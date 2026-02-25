@@ -1,4 +1,3 @@
-
 ---
 - name: LLDP Enablement and Description adding
   hosts: all
@@ -19,8 +18,11 @@
         commands:
           - show lldp neighbors
       register: save_lldp_result
-	  
-	- name: Output the LLDP result
-	  ansible.builtin.debug:
-	    var: save_lldp_result
-	  
+
+    - name: Print lldp
+      ansible.builtin.debug:
+        var: save_lldp_result
+
+
+
+ 
