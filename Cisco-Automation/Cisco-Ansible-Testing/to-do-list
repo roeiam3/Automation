@@ -1,0 +1,64 @@
+Automation Ideas - 
+
+1 - Use LLDP to configure on every UP/UP interface the description of where it goes via LLDP.
+
+Be ideompotent
+
+Do it yourself!
+
+
+Process - 
+
+1 - cry 
+2 - Enable (If not enabled) LLDP on all interfaces Globally
+3 - Wait X (Default is 30) Amount of time for LLDP to work
+4 - use "show lldp neighbors" to registar (And debug for me) to identify the interfaces that need to be configured
+5 - somehow pasrse the YML output, and identify interfaces
+6 - run a loop on the interfaces and configure for each interface a description to the neighbor 
+
+Use Device ID (For example R6) to Local Intf (E0/0) 
+
+
+
+
+Device ID           Local Intf     Hold-time  Capability      Port ID
+R6                  Et0/0          120        R               Et0/1
+
+Example of  how it looks
+
+=====================================================
+
+
+---
+- name: LLDP Enablement and Description adding
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Enable LLDP
+      cisco.ios.ios_lldp_global:
+        config:
+          enabled: true
+          state: present
+
+
+    - name: Fetch LLDP Information & Wait 30 seconds
+      ansible.builtin.wait_for:
+        timeout: 30
+      cisco.ios.ios_command:
+        commands:
+          - show lldp neighbors
+      register: save_lldp_result
+	  
+	- name: Output the LLDP result
+	  ansible.builtin.debug:
+	    var: save_lldp_result
+	  
+	  
+	  
+  tasks:
+    - name: Parse here LLDP format? idk how yet, need to loop on interfaces and run cisco module
+
+
+
+pip install ansible-pylibssh (useful for better ssh + no errors?)
