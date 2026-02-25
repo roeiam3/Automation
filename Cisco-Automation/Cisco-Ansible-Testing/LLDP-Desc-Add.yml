@@ -14,6 +14,8 @@
     - name: Fetch LLDP Information & Wait 30 seconds
       ansible.builtin.wait_for:
         timeout: 30
+      
+    - name: run LLDP Neighbor command
       cisco.ios.ios_command:
         commands:
           - show lldp neighbors
