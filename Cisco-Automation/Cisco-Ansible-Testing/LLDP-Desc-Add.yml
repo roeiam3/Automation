@@ -8,7 +8,7 @@
       cisco.ios.ios_lldp_global:
         config:
           enabled: true
-          state: present
+          state: merged
 
 
     - name: Fetch LLDP Information & Wait 30 seconds
