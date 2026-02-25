@@ -2,22 +2,69 @@
 - name: LLDP Enablement and Description adding
   hosts: all
   gather_facts: false
+
+  vars:
+    port_type_prefixes:
+      - Eth
+      - Et
+      - Gi
+      - Te
+      - Fo
+      - Po
+      - Vl
+      - Lo
+      - Tu
+      - Mg
+      - Se
+      - Sw
+
   tasks:
     - name: Enable LLDP
       cisco.ios.ios_lldp_global:
         config:
           enabled: true
-          
-    - name: Fetch LLDP Information & Wait 30 seconds
+
+    - name: Wait 30 seconds for LLDP to populate
       ansible.builtin.wait_for:
         timeout: 30
-        
-    - name: run LLDP Neighbor command
+
+    - name: Run LLDP Neighbor command
       cisco.ios.ios_command:
         commands:
           - show lldp neighbors
       register: save_lldp_result
-      
-    - name: Print lldp
+
+    - name: Parse LLDP neighbor lines
+      ansible.builtin.set_fact:
+        lldp_neighbors: >-
+          {{
+            save_lldp_result.stdout_lines[0]
+            | select('match', '^(' + port_type_prefixes | join('|') + '|[A-Za-z0-9]+\s+(' + port_type_prefixes | join('|') + '))')
+            | list
+          }}
+
+    - name: Build neighbor interface map
+      ansible.builtin.set_fact:
+        neighbor_map: >-
+          {{
+            neighbor_map | default([]) + [{
+              'device_id':   item.split()[0],
+              'local_intf':  item.split()[1],
+              'port_id':     item.split()[4] if item.split() | length >= 5 else 'Unknown'
+            }]
+          }}
+      loop: "{{ lldp_neighbors }}"
+
+    - name: Configure interface description from LLDP
+      cisco.ios.ios_interfaces:
+        config:
+          - name: "{{ item.local_intf }}"
+            description: "Neighbor is {{ item.device_id }}"
+        state: merged
+      loop: "{{ neighbor_map }}"
+      when: neighbor_map is defined and neighbor_map | length > 0
+
+    - name: Fallback - notify if no neighbors parsed
       ansible.builtin.debug:
-        var: save_lldp_result
+        msg: "No LLDP neighbors were found or parsed on {{ inventory_hostname }}"
+      when: neighbor_map is not defined or neighbor_map | length == 0
