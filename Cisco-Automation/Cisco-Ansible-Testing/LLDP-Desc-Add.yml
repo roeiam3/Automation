@@ -24,9 +24,9 @@
         config:
           enabled: true
 
-    - name: Wait 30 seconds for LLDP to populate
+    - name: Wait 35 seconds for LLDP to populate
       ansible.builtin.wait_for:
-        timeout: 30
+        timeout: 35
 
     - name: Run LLDP Neighbor command
       cisco.ios.ios_command:
