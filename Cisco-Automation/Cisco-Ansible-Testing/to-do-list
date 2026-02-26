@@ -28,3 +28,30 @@ Example of  how it looks.
 pip install ansible-pylibssh (useful for better ssh + no errors?)
 
 =====================================================
+
+2 - use LLDP to create a map of devices? (Drawing a topology via Draw.io maybe?)
+(Skip for now, need real hardware)
+
+Process - 
+
+1 - Run LLDP Globally (Set timers for 5 seconds, for faster speeds)
+2 - wait 5 seconds
+3 - Fetch " Show ip lldp neighbors " that information is sufficient
+
+
+=====================================================
+
+3 - Automatic saving of running-config, uploading to FTP server, comparing old Startup to new startup?
+
+(Can't do on IOL, need hardware)
+
+1 - run a saving script (copy running-config startup-config) 
+1.5 - (Probably) Identify the most recent save (For later comparison)
+2 - copy from X in inventory to Location on server (a Copy x: to X: command), Crucially, in the saving, Append a date
+3 - After saving with a date (Include seconds), Compare Newest save to the save before it (Meaning not the earliest, but the one before it)
+4 - if they're the same, Ignore and continue, If they're different, Generate a report in a specific folder, using the name of the device and the date, that report card will paste code that is different between the two ( For example, Descrptions, Neighbor command etc..) anything that is different will be there
+5 - in the end Playbook reports Which devices in inventroy were successful, which failed and which had changes and a report was made for.
+
+=====================================================
+
+4 - 
