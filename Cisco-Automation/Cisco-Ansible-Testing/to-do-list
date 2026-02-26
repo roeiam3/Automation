@@ -24,41 +24,7 @@ Use Device ID (For example R6) to Local Intf (E0/0)
 Device ID           Local Intf     Hold-time  Capability      Port ID
 R6                  Et0/0          120        R               Et0/1
 
-Example of  how it looks
+Example of  how it looks.
+pip install ansible-pylibssh (useful for better ssh + no errors?)
 
 =====================================================
-
-
----
-- name: LLDP Enablement and Description adding
-  hosts: all
-  gather_facts: false
-  
-  tasks:
-    - name: Enable LLDP
-      cisco.ios.ios_lldp_global:
-        config:
-          enabled: true
-          state: present
-
-
-    - name: Fetch LLDP Information & Wait 30 seconds
-      ansible.builtin.wait_for:
-        timeout: 30
-      cisco.ios.ios_command:
-        commands:
-          - show lldp neighbors
-      register: save_lldp_result
-	  
-	- name: Output the LLDP result
-	  ansible.builtin.debug:
-	    var: save_lldp_result
-	  
-	  
-	  
-  tasks:
-    - name: Parse here LLDP format? idk how yet, need to loop on interfaces and run cisco module
-
-
-
-pip install ansible-pylibssh (useful for better ssh + no errors?)
