@@ -6,4 +6,4 @@ A simple Docker image that runs **NGINX** and serves a custom `index.html`.
 * Replaces the default page with your own `index.html`
 * Serves a consistent, repeatable webpage
 
-**Use case:** quick static site or testing setup
+## Placeholder
