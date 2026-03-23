@@ -1,3 +1,10 @@
+## Useful Commands 
+
+* docker build -t {Image name} | Used to create images
+* docker run -p {inPort:outPort} {Image}
+
+
+
 ## NginxImage
 
 A simple Docker image that runs **NGINX** and serves a custom `index.html`.
