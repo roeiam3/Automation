@@ -1,9 +1,13 @@
 Step 1 - Netbox as docker
 
+apt update 
+
 git clone -b release https://github.com/netbox-community/netbox-docker.git
 cd netbox-docker
+
 # Copy the example override file
 cp docker-compose.override.yml.example docker-compose.override.yml
+
 # Read and edit the file to your liking
 docker compose pull
 
