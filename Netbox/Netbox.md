@@ -36,3 +36,13 @@ Afterwards, available via localhost:8000
 
 docker compose exec netbox /opt/netbox/netbox/manage.py createsuperuser
 
+
+
+
+Kill instance -
+
+docker compose down # add -d to run in background
+
+Bring instance up - 
+
+docker compose up # add -d to run in background
