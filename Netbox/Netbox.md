@@ -6,6 +6,7 @@ cd netbox-docker
 cp docker-compose.override.yml.example docker-compose.override.yml
 # Read and edit the file to your liking
 docker compose pull
+
 docker compose up
 
 Afterwards, available via localhost:8000
