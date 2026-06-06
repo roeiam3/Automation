@@ -1,3 +1,14 @@
+Architecture - 
+
+Netbox as SoT (Desired State) 
+
+Ansible as Automation
+
+Goal - Ansible playbooks query the Netbox which is the single source of truth (The desired state of the network) and ideompotently make sure the desired state is enforced.
+
+
+
+
 Step 1 - Netbox as docker
 
 
@@ -41,7 +52,7 @@ docker compose exec netbox /opt/netbox/netbox/manage.py createsuperuser
 
 Kill instance -
 
-docker compose down # add -d to run in background
+docker compose down 
 
 Bring instance up - 
 
